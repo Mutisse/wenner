@@ -13,7 +13,7 @@ function getBaseURL(): string {
 
   if (!url) {
     console.warn("⚠️  VITE_API_URL não definido no .env — usando localhost:9000");
-    return "http://localhost:9000";
+    return "https://wenner-api.onrender.com";
   }
 
   return url;
