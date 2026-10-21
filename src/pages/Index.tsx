@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { clearError } from "@/features/product/productSlice";
 import { fetchFavorites } from "@/features/favorite/favoriteActions";
 import hero from "../assets/img/wenner-hero.jpg";
+
 const Index = () => {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,8 +98,6 @@ const Index = () => {
     if (products && products.length > 0) {
       const newMax = Math.max(...products.map((p) => p.price));
       setFilters((prev) => {
-        // If the current upper bound is the initial fallback (200)
-        // or smaller than the new max, expand it so products are visible.
         if (prev.priceRange[1] === 200 || prev.priceRange[1] < newMax) {
           return { ...prev, priceRange: [0, newMax] };
         }
@@ -155,7 +154,7 @@ const Index = () => {
         return false;
       }
 
-      // Filter by colors - CORRIGIDO
+      // Filter by colors
       if (filters.colors.length > 0) {
         const productColorValues =
           product.colors?.map((colorObj) => colorObj.color.toLowerCase()) || [];
@@ -175,7 +174,7 @@ const Index = () => {
         return false;
       }
 
-      // Filter by rating (support both `rating` and `ratingsAverage` fields)
+      // Filter by rating
       if (filters.rating.length > 0) {
         const productRating =
           (product as any).rating ?? (product as any).ratingsAverage ?? 0;
@@ -185,11 +184,6 @@ const Index = () => {
         );
         if (!meetsRating) return false;
       }
-
-      // NOTE: removed automatic exclusion of out-of-stock products
-      // Previously the UI filtered out products with zero stock here.
-      // Keep all products visible by default; provide an explicit
-      // filter/toggle later if needed.
 
       return true;
     });
@@ -227,7 +221,6 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-    {/* Hero */}
 
         {/* Breadcrumb Skeleton */}
         <div className="container px-3 sm:px-4 md:px-6 py-3 sm:py-4">
@@ -261,7 +254,7 @@ const Index = () => {
 
             {/* Main Content Skeleton */}
             <main className="flex-1 pb-12">
-              {/* Header Skeleton */}
+              <Skeleton className="w-full h-64 sm:h-80 rounded-2xl mb-8" />
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
                 <div className="flex-1">
                   <Skeleton className="h-8 sm:h-10 w-32 mb-2" />
@@ -277,48 +270,18 @@ const Index = () => {
                     key={i}
                     className="bg-card rounded-lg border border-border overflow-hidden"
                   >
-                    {/* Product Image Skeleton */}
                     <Skeleton className="aspect-square w-full" />
-
                     <div className="p-4 space-y-3">
-                      {/* Product Name Skeleton */}
                       <Skeleton className="h-5 w-3/4" />
-
-                      {/* Category Skeleton */}
                       <Skeleton className="h-4 w-1/2" />
-
-                      {/* Price Skeleton */}
                       <div className="flex items-center gap-2">
                         <Skeleton className="h-6 w-24" />
                         <Skeleton className="h-5 w-20" />
                       </div>
-
-                      {/* Rating Skeleton */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-1">
-                          {[...Array(5)].map((_, j) => (
-                            <Skeleton key={j} className="h-3 w-3 rounded-sm" />
-                          ))}
-                        </div>
-                        <Skeleton className="h-4 w-16" />
-                      </div>
-
-                      {/* Button Skeleton */}
                       <Skeleton className="h-10 w-full rounded-md" />
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Pagination Skeleton */}
-              <div className="mt-8 sm:mt-12">
-                <div className="flex items-center justify-center gap-2">
-                  <Skeleton className="h-9 w-20 rounded-md" />
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-9 w-9 rounded-md" />
-                  ))}
-                  <Skeleton className="h-9 w-20 rounded-md" />
-                </div>
               </div>
             </main>
           </div>
@@ -330,58 +293,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-<section className="relative w-full overflow-hidden">
-  <img
-    src={hero}
-    alt="Wenner - Moda, estilo e qualidade"
-    className="w-full h-auto block"
-  />
 
-  {/* Container de conteúdo sobreposto à imagem */}
-  <div className="absolute inset-0 flex items-center">
-    <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
-      <div className="max-w-xl">
-        {/* Label superior */}
-        <span className="block text-xs sm:text-sm font-semibold tracking-[0.3em] text-foreground uppercase mb-4">
-          Moda · Estilo · Qualidade
-        </span>
-
-        {/* Título principal */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-foreground">
-          O que precisas,
-          <br />
-          <span className="text-[#8B6F47]">num só lugar.</span>
-        </h1>
-
-        {/* Subtítulo */}
-        <p className="mt-6 text-sm sm:text-base text-muted-foreground max-w-md leading-relaxed">
-          Descobre as melhores peças de roupa, calçado e acessórios
-          com qualidade garantida e entrega rápida. O teu estilo,
-          à distância de um clique.
-        </p>
-
-        {/* Botão CTA */}
-        <button className="mt-8 inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-black transition-colors">
-          Comprar Agora
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12h14" />
-            <path d="m12 5 7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
-</section>
       {/* Breadcrumb */}
       <div className="container px-4 md:px-6 py-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -398,27 +310,74 @@ const Index = () => {
       </div>
 
       <div className="container px-4 md:px-6">
-        <div className="flex gap-6">
-          {/* Desktop Sidebar */}
-          <div className="hidden lg:block">
+        <div className="flex gap-6 items-start">
+          {/* Desktop Sidebar (Filtros) */}
+          <aside className="hidden lg:block shrink-0">
             <FilterSidebar filters={filters} onFilterChange={setFilters} />
-          </div>
+          </aside>
 
-          {/* Main Content */}
-          <main className="flex-1 pb-12">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                  Itens Disponíveis
+          {/* Conteúdo Principal */}
+          <main className="flex-1 min-w-0 pb-12 space-y-8">
+            {/* HERO HERO BANNER - Posicionado ao lado do Filtro no Desktop */}
+            <section className="relative w-full overflow-hidden rounded-2xl min-h-[320px] sm:min-h-[400px] flex items-center bg-muted">
+              <img
+                src={hero}
+                alt="Wenner - Moda, estilo e qualidade"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+
+              {/* Camada para contraste de texto */}
+
+              {/* Conteúdo do Hero */}
+              <div className="relative z-10 p-6 sm:p-10 lg:p-12 max-w-lg">
+                <span className="block text-xs sm:text-sm font-semibold tracking-[0.3em] text-gray-600 uppercase mb-3">
+                  Moda · Estilo · Qualidade
+                </span>
+
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-gray-600">
+                  O que precisas,
+                  <br />
+                  <span className="text-[#E0C097]">num só lugar.</span>
                 </h1>
-                <p className="text-muted-foreground">
+
+                <p className="mt-4 text-xs sm:text-sm text-gray-500 leading-relaxed">
+                  Descobre as melhores peças de roupa, calçado e acessórios com
+                  qualidade garantida e entrega rápida.
+                </p>
+
+                {/* <button className="mt-6 inline-flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-gray-100 transition-colors shadow-md">
+                  Comprar Agora
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </button> */}
+              </div>
+            </section>
+
+            {/* Cabeçalho da Seção de Produtos */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
+                  Itens Disponíveis
+                </h2>
+                <p className="text-sm text-muted-foreground">
                   Exibindo {appliedFiltersProducts.length} de {products.length}{" "}
-                  Itens disponíveis
+                  itens disponíveis
                 </p>
               </div>
 
-              {/* Mobile Filter Button */}
+              {/* Botão de Filtro Mobile */}
               <Sheet open={mobileFilterOpen} onOpenChange={setMobileFilterOpen}>
                 <SheetTrigger asChild>
                   <Button variant="outline" size="sm" className="lg:hidden">
@@ -440,7 +399,7 @@ const Index = () => {
               </Sheet>
             </div>
 
-            {/* Product Grid */}
+            {/* Grid de Produtos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {appliedFiltersProducts.length > 0 ? (
                 paginatedProducts.map((product) => (
@@ -462,7 +421,7 @@ const Index = () => {
               )}
             </div>
 
-            {/* Pagination */}
+            {/* Paginação */}
             {appliedFiltersProducts.length > 0 && totalPages > 1 && (
               <div className="mt-12">
                 <Pagination>
