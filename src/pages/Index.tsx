@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { clearError } from "@/features/product/productSlice";
 import { fetchFavorites } from "@/features/favorite/favoriteActions";
 import hero from "../assets/img/wenner-hero.jpg";
+import { Footer } from "@/components/Footer";
 
 const Index = () => {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -400,7 +401,7 @@ const Index = () => {
             </div>
 
             {/* Grid de Produtos */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2  lg:grid-cols-3 gap-6">
               {appliedFiltersProducts.length > 0 ? (
                 paginatedProducts.map((product) => (
                   <ProductCard key={product._id} product={product} />
@@ -489,9 +490,13 @@ const Index = () => {
                 </Pagination>
               </div>
             )}
+
           </main>
+          
         </div>
+        
       </div>
+      <Footer />
     </div>
   );
 };
