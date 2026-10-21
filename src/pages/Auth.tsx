@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "../app/hooks"; // hooks tipados
+import { useAppDispatch, useAppSelector } from "../app/hooks";
 import {
   loginUser,
   signupUser,
@@ -26,29 +26,15 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import Logo from "@/components/Logo";
 
-// Validação de telefone de Moçambique
-const mozambiquePhoneRegex = /^(\+258)?[89]\d{8}$/;
-
+// Contacto de Moçambique: exatamente 9 dígitos, começando por 8 ou 9
 const validateMozambiquePhone = (phone: string): boolean => {
-  // Remove espaços e caracteres especiais
-  const cleaned = phone.replace(/[\s\-\(\)]/g, "");
-  
-  // Verifica se começa com +258 seguido de 9 dígitos começando com 8 ou 9
-  if (cleaned.startsWith("+258")) {
-    return /^\+258[89]\d{8}$/.test(cleaned);
-  }
-  
-  // Verifica se tem 9 dígitos começando com 8 ou 9
-  if (cleaned.length === 9) {
-    return /^[89]\d{8}$/.test(cleaned);
-  }
-  
-  // Verifica se tem 8 dígitos começando com 8 ou 9 (formato antigo)
-  if (cleaned.length === 8) {
-    return /^[89]\d{7}$/.test(cleaned);
-  }
-  
-  return false;
+  const cleaned = phone.replace(/\D/g, ""); // remove tudo o que não for dígito
+  return /^[89]\d{8}$/.test(cleaned); // 9 dígitos, começa por 8 ou 9
+};
+
+// Limpa o input: só dígitos, máximo 9
+const sanitizePhone = (value: string): string => {
+  return value.replace(/\D/g, "").slice(0, 9);
 };
 
 const loginSchema = z.object({
@@ -83,13 +69,9 @@ const signupSchema = z
       .string()
       .trim()
       .min(1, { message: "Contacto é obrigatório" })
-      .refine(
-        (phone) => validateMozambiquePhone(phone),
-        {
-          message:
-            "Contacto inválido. Use o formato: +258841234567 ou 841234567",
-        }
-      ),
+      .refine((phone) => validateMozambiquePhone(phone), {
+        message: "Contacto inválido. Use 9 dígitos, começando por 8 ou 9 (ex: 841234567)",
+      }),
     password: z
       .string()
       .min(1, { message: "Senha é obrigatória" })
@@ -147,6 +129,7 @@ const Auth = () => {
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string>("");
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [phone, setPhone] = useState("");
 
   // Extract token from URL on mount
   useEffect(() => {
@@ -176,7 +159,7 @@ const Auth = () => {
       });
 
       setIsLoading(false);
-      
+
       // Redirecionar baseado no role do usuário
       if (user?.role === "admin" || user?.role === "manager") {
         navigate("/admin");
@@ -192,7 +175,6 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
-        // Trata erro como um objeto com possível message
         const errorObj = error as {
           response?: { data?: { message?: string } };
           message?: string;
@@ -225,18 +207,13 @@ const Auth = () => {
     try {
       setIsCheckingEmail(true);
       const result = await dispatch(checkEmailExists(email)).unwrap();
-      
-      let errorMessage = "";
-      
+
       if (result.exists) {
-        errorMessage = "Este email já está cadastrado. Use outro email ou faça login.";
-      } else if (!result.isValid) {
-        errorMessage = `Email inválido: ${result.domainValidation?.reason || "Domínio não encontrado ou não aceita emails"}`;
+        setEmailError("Este email já está cadastrado. Use outro email ou faça login.");
+      } else {
+        setEmailError("");
       }
-      
-      setEmailError(errorMessage);
     } catch (error) {
-      // Se houver erro na verificação, não bloqueia o cadastro
       setEmailError("");
     } finally {
       setIsCheckingEmail(false);
@@ -248,17 +225,17 @@ const Auth = () => {
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
-    const phone = (formData.get("phone") as string) || "";
+    const phoneValue = (formData.get("phone") as string) || "";
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
     try {
-      signupSchema.parse({ name, email, password, confirmPassword, phone });
-      
-      // Verificar se o email já existe e é válido antes de cadastrar
+      signupSchema.parse({ name, email, password, confirmPassword, phone: phoneValue });
+
+      // Verificar se o email já existe antes de cadastrar
       setIsCheckingEmail(true);
       const emailCheck = await dispatch(checkEmailExists(email)).unwrap();
-      
+
       if (emailCheck.exists) {
         setEmailError("Este email já está cadastrado. Use outro email ou faça login.");
         setIsCheckingEmail(false);
@@ -269,28 +246,17 @@ const Auth = () => {
         });
         return;
       }
-      
-      if (!emailCheck.isValid) {
-        setEmailError(`Email inválido: ${emailCheck.domainValidation?.reason || "Domínio não encontrado"}`);
-        setIsCheckingEmail(false);
-        toast({
-          title: "Email inválido",
-          description: emailCheck.domainValidation?.reason || "O domínio do email não existe ou não aceita emails.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
+
       setEmailError("");
       setIsCheckingEmail(false);
-      
+
       setIsLoading(true);
 
       await dispatch(
         signupUser({
           name,
           email,
-          phone,
+          phone: phoneValue,
           password,
           passwordConfirm: confirmPassword,
         })
@@ -312,7 +278,6 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
-        // Trata erro como um objeto com possível message
         const errorObj = error as {
           response?: { data?: { message?: string } };
           message?: string;
@@ -490,14 +455,16 @@ const Auth = () => {
                   id="signup-phone"
                   name="phone"
                   type="tel"
-                  placeholder="Informe o seu contacto"
+                  placeholder="841234567"
                   required
                   disabled={isLoading}
                   icon={Phone}
                   iconPosition="right"
-                  maxLength={13}
-                  pattern="(\+258)?[89]\d{8}"
-                  title="Formato: +258841234567 ou 841234567 (9 dígitos começando com 8 ou 9)"
+                  maxLength={9}
+                  pattern="[89][0-9]{8}"
+                  title="9 dígitos, começando por 8 ou 9 (ex: 841234567)"
+                  value={phone}
+                  onChange={(e) => setPhone(sanitizePhone(e.target.value))}
                 />
                 <div className="space-y-1">
                   <InputField

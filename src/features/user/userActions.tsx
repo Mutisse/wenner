@@ -68,12 +68,10 @@ function getErrorMessage(err: unknown): string {
 
   const axiosError = err as any;
 
-  // Tenta extrair a mensagem da resposta da API (erro 401, 400, etc)
   if (axiosError?.response?.data?.message) {
     return axiosError.response.data.message;
   }
 
-  // Fallback para message do Error
   if (err instanceof Error && err.message) return err.message;
 
   return "Erro desconhecido";
@@ -95,8 +93,6 @@ export const loginUser = createAsyncThunk<User, LoginPayload>(
       const user = respData.data?.user || respData.user;
       const token = respData.token || respData.data?.token;
 
-      // If backend returned a message but no user (API signals an error using 200),
-      // treat it as a failure so frontend receives the message.
       const backendMessage =
         (response.data as RespShape & { message?: string })?.message ||
         respData.data?.message;
@@ -107,7 +103,6 @@ export const loginUser = createAsyncThunk<User, LoginPayload>(
         return rejectWithValue({ message: "Resposta inesperada do servidor" });
       }
 
-      // Persistência opcional
       if (user) {
         localStorage.setItem("user", JSON.stringify(user));
       }
@@ -117,9 +112,7 @@ export const loginUser = createAsyncThunk<User, LoginPayload>(
 
       return user;
     } catch (err: unknown) {
-      // Retorna o erro para o thunk
       const message = getErrorMessage(err);
-      // Return a structured error so frontend can read `error.message` when using unwrap()
       return rejectWithValue({ message });
     }
   }
@@ -157,7 +150,6 @@ export const signupUser = createAsyncThunk<User, SignupPayload>(
         return rejectWithValue({ message: "Resposta inesperada do servidor" });
       }
 
-      // Persistência
       if (user) {
         localStorage.setItem("user", JSON.stringify(user));
       }
@@ -173,6 +165,8 @@ export const signupUser = createAsyncThunk<User, SignupPayload>(
   }
 );
 
+// Verifica apenas se o email já existe. Aceita QUALQUER domínio válido.
+// O backend valida o formato do email; o frontend não bloqueia por domínio.
 export const checkEmailExists = createAsyncThunk<
   { exists: boolean; isValid: boolean; domainValidation?: { valid: boolean; reason: string } },
   string
@@ -180,19 +174,19 @@ export const checkEmailExists = createAsyncThunk<
   "user/checkEmail",
   async (email, { rejectWithValue }) => {
     try {
-      const response = await customFetch.post<{ 
-        status: string; 
-        exists: boolean; 
-        isValid: boolean;
+      const response = await customFetch.post<{
+        status: string;
+        exists: boolean;
+        isValid?: boolean;
         domainValidation?: { valid: boolean; reason: string };
-      }>(
-        "/api/v1/users/check-email",
-        { email }
-      );
-      return { 
+      }>("/api/v1/users/check-email", { email });
+
+      return {
         exists: response.data.exists,
-        isValid: response.data.isValid,
-        domainValidation: response.data.domainValidation
+        // Se o backend não devolver isValid, assumimos que é válido.
+        // Isto garante que QUALQUER domínio é aceite.
+        isValid: response.data.isValid ?? true,
+        domainValidation: response.data.domainValidation,
       };
     } catch (err: unknown) {
       const error = err as {
@@ -200,7 +194,9 @@ export const checkEmailExists = createAsyncThunk<
         message?: string;
       };
       const message =
-        error?.response?.data?.message || error?.message || "Erro ao verificar email";
+        error?.response?.data?.message ||
+        error?.message ||
+        "Erro ao verificar email";
       return rejectWithValue({ message });
     }
   }
@@ -208,13 +204,10 @@ export const checkEmailExists = createAsyncThunk<
 
 export const logoutUser = () => async (dispatch: AppDispatch) => {
   try {
-    // Attempt to notify backend (optional). Failure shouldn't block frontend logout.
     await customFetch.get("/api/v1/users/logout");
   } catch (err) {
-    // ignore backend logout errors but log for debugging
     console.warn("Logout backend failed:", err);
   } finally {
-    // Always clear local session and update state
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     dispatch(logout());
@@ -304,7 +297,6 @@ export const deactivateUser = createAsyncThunk<
       },
     });
 
-    // Retornar o usuário atualizado ao invés do ID
     const user = response.data?.data?.data || response.data?.data;
     return user;
   } catch (err: unknown) {
@@ -321,7 +313,6 @@ export const deactivateUser = createAsyncThunk<
   }
 });
 
-// Manter deleteUser para compatibilidade, mas agora desativa
 export const deleteUser = deactivateUser;
 
 export const forgotPassword = createAsyncThunk<
